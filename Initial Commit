@@ -1,0 +1,220 @@
+# Creating a downloadable repo skeleton ZIP for "Guardians-of-the-Grid"
+# This will create a folder structure with starter files and zip it at /mnt/data/Guardians-of-the-Grid.zip
+import os, zipfile, errno, pathlib, json, textwrap
+
+root = "/mnt/data/Guardians-of-the-Grid"
+os.makedirs(root, exist_ok=True)
+
+files = {
+    "README.md": textwrap.dedent("""\
+        # Guardians-of-the-Grid
+
+        A repo skeleton for the animated-education project "Guardians of the Grid".
+
+        ## What's inside
+        - `storyboards/` — storyboard images & PDFs (place here)
+        - `characters/` — character sheets (PNG/SVG)
+        - `scripts/` — episode scripts and outlines (Markdown)
+        - `web/starter-files/` — ready-to-paste React starter components (App.js, StoryPanel.js, index.css)
+        - `.github/workflows/ci.yml` — CI to build the web app
+
+        ## Quick start (recommended)
+        1. Clone this repo:
+           ```bash
+           git clone https://github.com/your-username/Guardians-of-the-Grid.git
+           cd Guardians-of-the-Grid
+           ```
+
+        2. Create the React app (in the `web` folder):
+           ```bash
+           npx create-react-app web
+           cd web
+           ```
+
+        3. Copy the starter components found in `web/starter-files/` into `web/src/` (replace `App.js`, add `StoryPanel.js`, and replace `index.css`).
+
+        4. Install extras:
+           ```bash
+           npm install tailwindcss framer-motion lucide-react
+           npx tailwindcss init -p
+           # edit tailwind.config.js to add "./src/**/*.{js,jsx,ts,tsx}" to content
+           ```
+
+        5. Start dev server:
+           ```bash
+           npm start
+           ```
+
+        ## VS Code tips
+        - Open workspace at project root: `code .`
+        - Recommended extensions: ESLint, Prettier, Tailwind CSS IntelliSense, GitLens.
+
+        ## License
+        MIT
+        """),
+    ".gitignore": textwrap.dedent("""\
+        # Node & build
+        node_modules/
+        web/node_modules/
+        web/build/
+        build/
+        dist/
+
+        # Env
+        .env
+        .env.local
+
+        # OS
+        .DS_Store
+        Thumbs.db
+
+        # IDEs
+        .vscode/
+        .idea/
+
+        # Logs
+        npm-debug.log*
+        yarn-debug.log*
+        yarn-error.log*
+        """),
+    ".github/workflows/ci.yml": textwrap.dedent("""\
+        name: CI
+
+        on:
+          push:
+            branches: [ main ]
+          pull_request:
+            branches: [ main ]
+
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - name: Use Node.js
+                uses: actions/setup-node@v4
+                with:
+                  node-version: '20'
+              - name: Install dependencies
+                working-directory: web
+                run: npm ci
+              - name: Build
+                working-directory: web
+                run: npm run build
+              - name: Upload build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                  name: web-build
+                  path: web/build
+        """),
+    "storyboards/README.md": "# Drop storyboard panels (PNG/PDF) here. Suggested structure: `Episode01/Panel01.png`",
+    "characters/README.md": "# Place character sheets and variants (PNG/SVG) here. Example files: `Iggy_fullbody.png`, `Iggy_pose1.png`",
+    "scripts/README.md": "# Add episode scripts and outlines here. Use Markdown. Example: `S01E01-Intruder-Library.md`",
+    "web/starter-files/README-starter.md": textwrap.dedent("""\
+        Copy the files in this folder into `web/src/` after you run `npx create-react-app web`.
+
+        Steps:
+        1. From repo root, scaffold web app:
+           npx create-react-app web
+        2. Copy these starter files into web/src/ (overwrite App.js and index.css, create StoryPanel.js)
+        3. Install packages:
+           npm install tailwindcss framer-motion lucide-react
+           npx tailwindcss init -p
+        4. Edit tailwind.config.js `content` array to include \"./src/**/*.{js,jsx,ts,tsx}\"
+        5. Start dev: npm start
+        """),
+    "web/starter-files/App.js": textwrap.dedent("""\
+        import React from 'react';
+        import StoryPanel from './StoryPanel';
+        import './index.css';
+
+        function App() {
+          const panels = [
+            {
+              title: "The Intruder in the Library",
+              description: "Iggy notices something strange and applies the 4 Is.",
+              image: "/images/iggy-library.png"
+            },
+            {
+              title: "Villainous Vex Strikes",
+              description: "Vex tries to bypass security. Can Iggy stop him?",
+              image: "/images/vex.png"
+            }
+          ];
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col gap-6 p-10">
+              <h1 className="text-3xl font-bold text-white mb-6">Guardians of the Grid — Storyboard Preview</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {panels.map((p, i) => (
+                  <StoryPanel key={i} {...p} />
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        export default App;
+        """),
+    "web/starter-files/StoryPanel.js": textwrap.dedent("""\
+        import React from "react";
+        import { motion } from "framer-motion";
+
+        export default function StoryPanel({ title, description, image }) {
+          return (
+            <motion.div
+              className="p-6 bg-slate-900 text-white rounded-2xl shadow-lg flex flex-col items-center"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="w-64 h-40 bg-slate-700 rounded-lg mb-4 flex items-center justify-center">
+                <span className="text-sm text-slate-300">Placeholder image</span>
+              </div>
+              <h2 className="text-xl font-bold">{title}</h2>
+              <p className="mt-2 text-sm text-slate-300">{description}</p>
+            </motion.div>
+          );
+        }
+        """),
+    "web/starter-files/index.css": textwrap.dedent("""\
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+
+        html, body, #root {
+          height: 100%;
+        }
+
+        body {
+          @apply bg-slate-900;
+        }
+        """),
+}
+
+# create all files
+for path, content in files.items():
+    file_path = os.path.join(root, path)
+    dir_path = os.path.dirname(file_path)
+    os.makedirs(dir_path, exist_ok=True)
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+# create placeholder .gitkeep files
+for d in ["storyboards/images", "characters/images", "scripts/drafts", "web/public/images"]:
+    p = os.path.join(root, d)
+    os.makedirs(p, exist_ok=True)
+    with open(os.path.join(p, ".gitkeep"), "w") as f:
+        f.write("")
+
+# zip the folder
+zip_path = "/mnt/data/Guardians-of-the-Grid.zip"
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for folder, _, filenames in os.walk(root):
+        for filename in filenames:
+            filepath = os.path.join(folder, filename)
+            arcname = os.path.relpath(filepath, start="/mnt/data")
+            zf.write(filepath, arcname)
+
+zip_path
+
